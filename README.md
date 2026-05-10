@@ -73,6 +73,31 @@ flightbox export <run-id> -f jsonl -o eval_dataset.jsonl
 flightbox export <run-id> -f pytest -o test_replay.py
 ```
 
+### LiteLLM
+
+FlightBox can record and replay LiteLLM calls too:
+
+```bash
+pip install "flightbox[litellm]"
+```
+
+```python
+import flightbox
+import litellm
+
+with flightbox.record("router-debug") as rec:
+    litellm.completion(
+        model="openrouter/openai/gpt-4o-mini",
+        messages=[{"role": "user", "content": "ping"}],
+    )
+
+with flightbox.replay(rec.run_id):
+    response = litellm.completion(
+        model="openrouter/openai/gpt-4o-mini",
+        messages=[{"role": "user", "content": "ping"}],
+    )
+```
+
 ## CLI Reference
 
 ```bash
@@ -92,6 +117,7 @@ During replay, the patched methods return saved responses instead of making real
 **Supported SDKs:**
 - OpenAI Python SDK (`openai>=1.0`) — sync and async
 - Anthropic Python SDK (`anthropic>=0.20`)
+- LiteLLM (`litellm>=1.0`) — `completion` and `acompletion`
 - Any SDK that wraps these (LangChain, CrewAI, Pydantic AI, etc.)
 
 ## Storage
@@ -185,6 +211,7 @@ flightbox export <run-id> -f pytest -o test_replay.py
 
 - OpenAI Python SDK（同步 + 异步）
 - Anthropic Python SDK
+- LiteLLM（`completion` + `acompletion`）
 - 任何基于这些 SDK 的框架（LangChain、CrewAI、Pydantic AI 等）
 
 ## License

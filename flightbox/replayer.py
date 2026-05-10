@@ -39,6 +39,7 @@ class ReplayContext:
         self._state = _ReplayState(events)
         self._patch_openai()
         self._patch_anthropic()
+        self._patch_litellm()
 
     def stop(self):
         for obj, attr, original in reversed(self._patches):
@@ -70,6 +71,8 @@ class ReplayContext:
                 return Message.model_validate(response_data)
             except (ImportError, Exception):
                 pass
+        if provider == "litellm":
+            return response_data
         # fallback: return the raw dict
         return response_data
 
@@ -105,6 +108,42 @@ class ReplayContext:
 
         return wrapper
 
+    def _make_replay_function(self, original: Callable, provider: str):
+        state = self._state
+        ctx = self
+
+        @functools.wraps(original)
+        def wrapper(*args, **kwargs):
+            ev = state.next_response()
+            if ev is None:
+                raise RuntimeError(
+                    f"FlightBox replay exhausted: no more recorded {provider} responses"
+                )
+            resp_data = json.loads(ev["response"]) if isinstance(ev["response"], str) else ev["response"]
+            if ev.get("error"):
+                raise RuntimeError(f"Replayed error: {ev['error']}")
+            return ctx._build_mock_response(provider, resp_data)
+
+        return wrapper
+
+    def _make_async_replay_function(self, original: Callable, provider: str):
+        state = self._state
+        ctx = self
+
+        @functools.wraps(original)
+        async def wrapper(*args, **kwargs):
+            ev = state.next_response()
+            if ev is None:
+                raise RuntimeError(
+                    f"FlightBox replay exhausted: no more recorded {provider} responses"
+                )
+            resp_data = json.loads(ev["response"]) if isinstance(ev["response"], str) else ev["response"]
+            if ev.get("error"):
+                raise RuntimeError(f"Replayed error: {ev['error']}")
+            return ctx._build_mock_response(provider, resp_data)
+
+        return wrapper
+
     def _patch_openai(self):
         try:
             from openai.resources.chat import completions as mod
@@ -120,6 +159,27 @@ class ReplayContext:
             original = mod.Messages.create
             mod.Messages.create = self._make_replay_fn(original, "anthropic")
             self._patches.append((mod.Messages, "create", original))
+        except (ImportError, AttributeError):
+            pass
+
+    def _patch_litellm(self):
+        try:
+            import litellm
+
+            original = litellm.completion
+            litellm.completion = self._make_replay_function(original, "litellm")
+            self._patches.append((litellm, "completion", original))
+        except (ImportError, AttributeError):
+            pass
+
+        try:
+            import litellm
+
+            original_async = litellm.acompletion
+            litellm.acompletion = self._make_async_replay_function(
+                original_async, "litellm"
+            )
+            self._patches.append((litellm, "acompletion", original_async))
         except (ImportError, AttributeError):
             pass
 

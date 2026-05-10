@@ -37,6 +37,7 @@ class FlightRecorder:
         self._seq = 0
         self._patch_openai()
         self._patch_anthropic()
+        self._patch_litellm()
         return self._run_id
 
     def stop(self):
@@ -107,6 +108,39 @@ class FlightRecorder:
         except (ImportError, AttributeError):
             pass
 
+    def _patch_litellm(self):
+        try:
+            import litellm
+
+            original = litellm.completion
+            recorder = self
+
+            @functools.wraps(original)
+            def patched_completion(*args, **kwargs):
+                return recorder._wrap_function_call(original, "litellm", args, kwargs)
+
+            litellm.completion = patched_completion
+            self._patches.append((litellm, "completion", original))
+        except (ImportError, AttributeError):
+            pass
+
+        try:
+            import litellm
+
+            original_async = litellm.acompletion
+            recorder = self
+
+            @functools.wraps(original_async)
+            async def patched_acompletion(*args, **kwargs):
+                return await recorder._wrap_async_function_call(
+                    original_async, "litellm", args, kwargs
+                )
+
+            litellm.acompletion = patched_acompletion
+            self._patches.append((litellm, "acompletion", original_async))
+        except (ImportError, AttributeError):
+            pass
+
     def _unpatch_all(self):
         for obj, attr, original in reversed(self._patches):
             setattr(obj, attr, original)
@@ -114,7 +148,12 @@ class FlightRecorder:
 
     # -- call interception --
 
-    def _extract_info(self, provider: str, kwargs: dict) -> tuple[str | None, dict, dict | None]:
+    def _extract_info(
+        self,
+        provider: str,
+        kwargs: dict,
+        args: tuple = (),
+    ) -> tuple[str | None, dict, dict | None]:
         """Pull model name, serializable request, and token usage from kwargs/response."""
         model = kwargs.get("model")
         # build a serializable copy of the request
@@ -123,6 +162,8 @@ class FlightRecorder:
                      "top_p", "stop", "stream", "system"):
             if key in kwargs:
                 req[key] = kwargs[key]
+        if args:
+            req["args"] = [repr(arg) for arg in args]
         return model, req, None
 
     def _extract_usage(self, provider: str, response: Any) -> dict | None:
@@ -139,6 +180,8 @@ class FlightRecorder:
         }
 
     def _serialize_response(self, response: Any) -> Any:
+        if isinstance(response, (dict, list, str, int, float, bool)) or response is None:
+            return response
         if hasattr(response, "model_dump"):
             return response.model_dump()
         if hasattr(response, "to_dict"):
@@ -149,7 +192,7 @@ class FlightRecorder:
         self, original: Callable, instance: Any, provider: str,
         args: tuple, kwargs: dict,
     ) -> Any:
-        model, req, _ = self._extract_info(provider, kwargs)
+        model, req, _ = self._extract_info(provider, kwargs, args)
         self._seq += 1
         seq = self._seq
         t0 = time.perf_counter()
@@ -177,7 +220,7 @@ class FlightRecorder:
         self, original: Callable, instance: Any, provider: str,
         args: tuple, kwargs: dict,
     ) -> Any:
-        model, req, _ = self._extract_info(provider, kwargs)
+        model, req, _ = self._extract_info(provider, kwargs, args)
         self._seq += 1
         seq = self._seq
         t0 = time.perf_counter()
@@ -185,6 +228,68 @@ class FlightRecorder:
         response = None
         try:
             response = await original(instance, *args, **kwargs)
+            return response
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            raise
+        finally:
+            latency = (time.perf_counter() - t0) * 1000
+            usage = self._extract_usage(provider, response) if response else None
+            resp_data = self._serialize_response(response) if response else None
+            if self._run_id:
+                self.store.add_event(
+                    self._run_id, seq, "llm_call",
+                    provider=provider, model=model,
+                    request=req, response=resp_data,
+                    latency_ms=latency, token_usage=usage, error=error,
+                )
+
+    def _wrap_function_call(
+        self,
+        original: Callable,
+        provider: str,
+        args: tuple,
+        kwargs: dict,
+    ) -> Any:
+        model, req, _ = self._extract_info(provider, kwargs, args)
+        self._seq += 1
+        seq = self._seq
+        t0 = time.perf_counter()
+        error = None
+        response = None
+        try:
+            response = original(*args, **kwargs)
+            return response
+        except Exception as e:
+            error = f"{type(e).__name__}: {e}"
+            raise
+        finally:
+            latency = (time.perf_counter() - t0) * 1000
+            usage = self._extract_usage(provider, response) if response else None
+            resp_data = self._serialize_response(response) if response else None
+            if self._run_id:
+                self.store.add_event(
+                    self._run_id, seq, "llm_call",
+                    provider=provider, model=model,
+                    request=req, response=resp_data,
+                    latency_ms=latency, token_usage=usage, error=error,
+                )
+
+    async def _wrap_async_function_call(
+        self,
+        original: Callable,
+        provider: str,
+        args: tuple,
+        kwargs: dict,
+    ) -> Any:
+        model, req, _ = self._extract_info(provider, kwargs, args)
+        self._seq += 1
+        seq = self._seq
+        t0 = time.perf_counter()
+        error = None
+        response = None
+        try:
+            response = await original(*args, **kwargs)
             return response
         except Exception as e:
             error = f"{type(e).__name__}: {e}"
