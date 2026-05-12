@@ -63,6 +63,14 @@ flightbox diff <run-a> <run-b>
 
 Shows exactly where two runs diverged — which step, which field (request, response, model) changed.
 
+### Summarize a Run
+
+```bash
+flightbox stats <run-id>
+```
+
+Shows aggregate LLM calls, errors, token usage, total latency, and average latency for one recording.
+
 ### Export as Eval Dataset
 
 ```bash
@@ -103,6 +111,7 @@ with flightbox.replay(rec.run_id):
 ```bash
 flightbox list                    # List all recorded runs
 flightbox show <run-id>           # Show run details and events
+flightbox stats <run-id>          # Summarize latency, tokens, and errors
 flightbox diff <run-a> <run-b>    # Compare two runs
 flightbox export <run-id>         # Export as JSONL or pytest
 flightbox delete <run-id>         # Delete a recording
@@ -199,6 +208,14 @@ with flightbox.replay("abc123def4") as ctx:
 ```bash
 flightbox diff <run-a> <run-b>
 ```
+
+### 汇总一次运行
+
+```bash
+flightbox stats <run-id>
+```
+
+查看一次录制里的 LLM 调用数、错误数、token 用量、总延迟和平均延迟。
 
 ### 导出为评测数据集
 

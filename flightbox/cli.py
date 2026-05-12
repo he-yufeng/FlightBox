@@ -100,6 +100,40 @@ def show_run(ctx, run_id):
     store.close()
 
 
+@cli.command("stats")
+@click.argument("run_id")
+@click.pass_context
+def stats_cmd(ctx, run_id):
+    """Show aggregate latency, token, and error stats for a run."""
+    store = _get_store(ctx.obj["db"])
+    run = store.get_run(run_id)
+    if not run:
+        console.print(f"[red]Run '{run_id}' not found.[/red]")
+        return
+
+    stats = store.get_run_stats(run_id)
+    table = Table(title=f"Run Stats: {run_id}")
+    table.add_column("Metric")
+    table.add_column("Value", justify="right")
+
+    rows = [
+        ("Name", run.get("name") or "-"),
+        ("Events", stats["events"]),
+        ("LLM calls", stats["llm_calls"]),
+        ("Errors", stats["errors"]),
+        ("Prompt tokens", stats["prompt_tokens"]),
+        ("Completion tokens", stats["completion_tokens"]),
+        ("Total tokens", stats["total_tokens"]),
+        ("Total latency", f"{stats['latency_ms_total']:.0f}ms"),
+        ("Avg latency", f"{stats['latency_ms_avg']:.0f}ms"),
+    ]
+    for metric, value in rows:
+        table.add_row(metric, str(value))
+
+    console.print(table)
+    store.close()
+
+
 @cli.command("diff")
 @click.argument("run_a")
 @click.argument("run_b")

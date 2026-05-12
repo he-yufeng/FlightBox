@@ -141,3 +141,48 @@ class RecordStore:
             "SELECT COUNT(*) FROM events WHERE run_id = ?", (run_id,)
         ).fetchone()
         return row[0]
+
+    def get_run_stats(self, run_id: str) -> dict[str, Any]:
+        events = self.get_events(run_id)
+        latencies = [
+            float(ev["latency_ms"])
+            for ev in events
+            if ev.get("latency_ms") is not None
+        ]
+
+        prompt_tokens = 0
+        completion_tokens = 0
+        total_tokens = 0
+        errors = 0
+
+        for ev in events:
+            if ev.get("error"):
+                errors += 1
+
+            usage_raw = ev.get("token_usage")
+            if not usage_raw:
+                continue
+            usage = json.loads(usage_raw) if isinstance(usage_raw, str) else usage_raw
+            if not isinstance(usage, dict):
+                continue
+
+            prompt = int(usage.get("prompt_tokens") or usage.get("input_tokens") or 0)
+            completion = int(
+                usage.get("completion_tokens") or usage.get("output_tokens") or 0
+            )
+            total = int(usage.get("total_tokens") or prompt + completion)
+
+            prompt_tokens += prompt
+            completion_tokens += completion
+            total_tokens += total
+
+        return {
+            "events": len(events),
+            "llm_calls": sum(1 for ev in events if ev["event_type"] == "llm_call"),
+            "errors": errors,
+            "prompt_tokens": prompt_tokens,
+            "completion_tokens": completion_tokens,
+            "total_tokens": total_tokens,
+            "latency_ms_total": sum(latencies),
+            "latency_ms_avg": (sum(latencies) / len(latencies)) if latencies else 0,
+        }

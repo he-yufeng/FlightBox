@@ -70,3 +70,32 @@ def test_run_metadata(store):
     meta = json.loads(run["metadata"])
     assert meta["env"] == "prod"
     assert meta["version"] == 2
+
+
+def test_run_stats(store):
+    rid = store.create_run(name="stats")
+    store.add_event(
+        rid,
+        1,
+        "llm_call",
+        latency_ms=100,
+        token_usage={"prompt_tokens": 10, "completion_tokens": 5},
+    )
+    store.add_event(
+        rid,
+        2,
+        "llm_call",
+        latency_ms=300,
+        token_usage={"input_tokens": 2, "output_tokens": 3},
+        error="timeout",
+    )
+
+    stats = store.get_run_stats(rid)
+
+    assert stats["events"] == 2
+    assert stats["llm_calls"] == 2
+    assert stats["errors"] == 1
+    assert stats["prompt_tokens"] == 12
+    assert stats["completion_tokens"] == 8
+    assert stats["total_tokens"] == 20
+    assert stats["latency_ms_avg"] == pytest.approx(200)
