@@ -10,6 +10,7 @@ from rich.table import Table
 
 from flightbox.diff import diff_runs
 from flightbox.export import export_jsonl, export_pytest
+from flightbox.report import write_report
 from flightbox.store import RecordStore
 
 console = Console()
@@ -179,6 +180,20 @@ def export_cmd(ctx, run_id, fmt, output):
         out = output or f"test_replay_{run_id}.py"
         count = export_pytest(run_id, out, store)
         console.print(f"Generated pytest replay test with {count} events at [bold]{out}[/bold]")
+    store.close()
+
+
+@cli.command("report")
+@click.argument("run_id")
+@click.option("-f", "--format", "fmt", type=click.Choice(["md", "html"]), default="md")
+@click.option("-o", "--output", default=None, help="Output report path.")
+@click.pass_context
+def report_cmd(ctx, run_id, fmt, output):
+    """Generate a redacted Markdown or HTML evidence report."""
+    store = _get_store(ctx.obj["db"])
+    out = output or f"flightbox_report_{run_id}.{fmt}"
+    write_report(run_id, out, fmt=fmt, store=store)
+    console.print(f"Generated redacted report at [bold]{out}[/bold]")
     store.close()
 
 
