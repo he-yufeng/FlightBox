@@ -12,6 +12,7 @@ from flightbox.diff import diff_runs
 from flightbox.export import export_jsonl, export_pytest
 from flightbox.report import write_report
 from flightbox.store import RecordStore
+from flightbox.timeline import build_timeline, render_timeline_markdown
 
 console = Console()
 
@@ -195,6 +196,30 @@ def report_cmd(ctx, run_id, fmt, output):
     write_report(run_id, out, fmt=fmt, store=store)
     console.print(f"Generated redacted report at [bold]{out}[/bold]")
     store.close()
+
+
+@cli.command("timeline")
+@click.argument("run_id")
+@click.option("-o", "--output", default=None, help="Optional Markdown output path.")
+@click.pass_context
+def timeline_cmd(ctx, run_id, output):
+    """Show a compact redacted timeline for a recorded run."""
+    store = _get_store(ctx.obj["db"])
+    try:
+        run = store.get_run(run_id)
+        if not run:
+            console.print(f"[red]Run '{run_id}' not found.[/red]")
+            return
+
+        text = render_timeline_markdown(run_id, build_timeline(run_id, store))
+        if output:
+            with open(output, "w", encoding="utf-8") as f:
+                f.write(text)
+            console.print(f"Wrote timeline to [bold]{output}[/bold]")
+        else:
+            console.print(text)
+    finally:
+        store.close()
 
 
 @cli.command("delete")
