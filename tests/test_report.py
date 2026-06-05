@@ -1,3 +1,6 @@
+import json
+
+from flightbox.audit import audit_run, render_audit_markdown, write_audit
 from flightbox.report import build_report, render_markdown, write_report
 from flightbox.store import RecordStore
 
@@ -34,3 +37,37 @@ def test_write_report_html(tmp_path):
 
     assert out.exists()
     assert "<!doctype html>" in out.read_text(encoding="utf-8")
+
+
+def test_audit_reports_locations_without_secret_values(tmp_path):
+    store = RecordStore(tmp_path / "recordings.db")
+    run_id = store.create_run(name="audit-run")
+    store.add_event(
+        run_id,
+        1,
+        "llm_call",
+        request={"headers": {"Authorization": "Bearer tokenvalue123456789"}},
+        response={"content": "ok"},
+    )
+
+    findings = audit_run(run_id, store)
+    text = render_audit_markdown(run_id, findings)
+
+    assert findings
+    assert findings[0].field == "request"
+    assert "tokenvalue" not in text
+    assert "<REDACTED>" in text
+    assert all("tokenvalue" not in item.preview for item in findings)
+
+
+def test_write_audit_json(tmp_path):
+    store = RecordStore(tmp_path / "recordings.db")
+    run_id = store.create_run(name="json-audit")
+    store.add_event(run_id, 1, "llm_call", error="api_key=secretvalue123456")
+
+    out = tmp_path / "audit.json"
+    write_audit(run_id, out, fmt="json", store=store)
+
+    payload = json.loads(out.read_text(encoding="utf-8"))
+    assert payload[0]["pattern"] == "api-key-field"
+    assert "secretvalue" not in payload[0]["preview"]

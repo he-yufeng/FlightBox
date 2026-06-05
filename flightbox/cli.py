@@ -8,6 +8,7 @@ import click
 from rich.console import Console
 from rich.table import Table
 
+from flightbox.audit import audit_run, write_audit
 from flightbox.diff import diff_runs
 from flightbox.export import export_jsonl, export_pytest
 from flightbox.report import write_report
@@ -218,6 +219,41 @@ def timeline_cmd(ctx, run_id, output):
             console.print(f"Wrote timeline to [bold]{output}[/bold]")
         else:
             console.print(text)
+    finally:
+        store.close()
+
+
+@cli.command("audit")
+@click.argument("run_id")
+@click.option("-f", "--format", "fmt", type=click.Choice(["md", "json"]), default="md")
+@click.option("-o", "--output", default=None, help="Output audit path.")
+@click.pass_context
+def audit_cmd(ctx, run_id, fmt, output):
+    """Audit raw recording payloads for common secret patterns."""
+    store = _get_store(ctx.obj["db"])
+    try:
+        if not store.get_run(run_id):
+            console.print(f"[red]Run '{run_id}' not found.[/red]")
+            return
+
+        findings = audit_run(run_id, store)
+        if output:
+            write_audit(run_id, output, fmt=fmt, store=store)
+            console.print(f"Wrote secret audit to [bold]{output}[/bold]")
+            return
+
+        if not findings:
+            console.print("[green]No common secret patterns found.[/green]")
+            return
+
+        table = Table(title=f"Secret Audit: {run_id}")
+        table.add_column("Event", justify="right")
+        table.add_column("Field")
+        table.add_column("Pattern")
+        table.add_column("Preview")
+        for item in findings:
+            table.add_row(str(item.seq), item.field, item.pattern, item.preview)
+        console.print(table)
     finally:
         store.close()
 

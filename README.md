@@ -80,10 +80,15 @@ flightbox report <run-id> -f html -o evidence.html
 
 # compact redacted call timeline
 flightbox timeline <run-id> -o timeline.md
+
+# audit raw recordings before sharing evidence
+flightbox audit <run-id>
+flightbox audit <run-id> -f json -o audit.json
 ```
 
 The report redacts common API keys, bearer tokens, GitHub tokens, and authorization headers before writing the file.
 The timeline is a shorter PR-friendly view: one row per recorded call, with provider, model, latency, token totals, error state, and redacted request / response previews.
+The audit command scans the raw recording for common secret patterns and reports only the event, field, pattern, and redacted preview.
 
 ## LiteLLM
 
@@ -115,6 +120,7 @@ flightbox list                    # List recorded runs
 flightbox show <run-id>           # Show run details and events
 flightbox stats <run-id>          # Summarize latency, tokens, and errors
 flightbox timeline <run-id>       # Render a compact redacted call timeline
+flightbox audit <run-id>          # Check raw payloads for common secret patterns
 flightbox diff <run-a> <run-b>    # Compare two runs
 flightbox export <run-id>         # Export as JSONL or pytest
 flightbox report <run-id>         # Export a redacted evidence report
