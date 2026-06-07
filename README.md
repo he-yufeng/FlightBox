@@ -77,6 +77,11 @@ flightbox export <run-id> -f pytest -o test_replay.py
 # redacted evidence report
 flightbox report <run-id> -f md -o evidence.md
 flightbox report <run-id> -f html -o evidence.html
+flightbox report <run-id> \
+  --note "reproduced after retry-path patch" \
+  --verify "pytest tests/test_agent.py -q" \
+  --env repo=agent-demo \
+  -o evidence.md
 
 # compact redacted call timeline
 flightbox timeline <run-id> -o timeline.md
@@ -87,7 +92,7 @@ flightbox audit <run-id> -f json -o audit.json
 flightbox audit <run-id> --policy .flightboxignore
 ```
 
-The report redacts common API keys, bearer tokens, GitHub tokens, and authorization headers before writing the file.
+The report redacts common API keys, bearer tokens, GitHub tokens, and authorization headers before writing the file. It also records lightweight evidence metadata: notes, verification commands, Python version, platform, and optional `KEY=VALUE` environment facts.
 The timeline is a shorter PR-friendly view: one row per recorded call, with provider, model, latency, token totals, error state, and redacted request / response previews.
 The audit command scans the raw recording for common secret patterns and reports only the event, top-level field, JSON path, pattern, and redacted preview. For noisy but safe fields, add a `.flightboxignore` policy:
 
@@ -137,6 +142,7 @@ flightbox audit <run-id> --policy .flightboxignore
 flightbox diff <run-a> <run-b>    # Compare two runs
 flightbox export <run-id>         # Export as JSONL or pytest
 flightbox report <run-id>         # Export a redacted evidence report
+flightbox report <run-id> --note "..." --verify "pytest -q" --env os=windows
 flightbox delete <run-id>         # Delete a recording
 ```
 

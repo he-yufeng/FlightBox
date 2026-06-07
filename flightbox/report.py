@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import html
 import json
+import platform
 import re
+import sys
 from pathlib import Path
 from typing import Any
 
@@ -43,7 +45,14 @@ def _is_secret_key(key: str) -> bool:
     )
 
 
-def build_report(run_id: str, store: RecordStore | None = None) -> dict[str, Any]:
+def build_report(
+    run_id: str,
+    store: RecordStore | None = None,
+    *,
+    notes: list[str] | None = None,
+    verification: list[str] | None = None,
+    environment: dict[str, str] | None = None,
+) -> dict[str, Any]:
     store = store or RecordStore()
     run = store.get_run(run_id)
     if not run:
@@ -71,12 +80,21 @@ def build_report(run_id: str, store: RecordStore | None = None) -> dict[str, Any
         "run": redact(run),
         "stats": stats,
         "events": events,
+        "evidence": {
+            "notes": notes or [],
+            "verification": verification or [],
+            "environment": _report_environment(environment),
+        },
     }
 
 
 def render_markdown(report: dict[str, Any]) -> str:
     run = report["run"]
     stats = report["stats"]
+    evidence = report.get("evidence") or {}
+    notes = evidence.get("notes") or []
+    verification = evidence.get("verification") or []
+    environment = evidence.get("environment") or {}
     lines = [
         f"# FlightBox Report: {run['run_id']}",
         "",
@@ -89,11 +107,36 @@ def render_markdown(report: dict[str, Any]) -> str:
         f"- Total tokens: `{stats['total_tokens']}`",
         f"- Total latency: `{stats['latency_ms_total']:.0f}ms`",
         "",
-        "## Timeline",
+        "## Evidence Notes",
         "",
-        "| # | Type | Provider | Model | Latency | Error |",
-        "| ---: | --- | --- | --- | ---: | --- |",
     ]
+    if notes:
+        lines.extend(f"- {note}" for note in notes)
+    else:
+        lines.append("- No extra notes supplied.")
+
+    lines.extend(["", "## Verification", ""])
+    if verification:
+        lines.extend(f"- `{command}`" for command in verification)
+    else:
+        lines.append("- No verification commands supplied.")
+
+    lines.extend(["", "## Environment", ""])
+    if environment:
+        for key, value in environment.items():
+            lines.append(f"- {key}: `{value}`")
+    else:
+        lines.append("- No environment metadata.")
+
+    lines.extend(
+        [
+            "",
+            "## Timeline",
+            "",
+            "| # | Type | Provider | Model | Latency | Error |",
+            "| ---: | --- | --- | --- | ---: | --- |",
+        ]
+    )
     for event in report["events"]:
         lines.append(
             "| "
@@ -143,12 +186,44 @@ def write_report(
     *,
     fmt: str = "md",
     store: RecordStore | None = None,
+    notes: list[str] | None = None,
+    verification: list[str] | None = None,
+    environment: dict[str, str] | None = None,
 ) -> Path:
-    report = build_report(run_id, store)
+    report = build_report(
+        run_id,
+        store,
+        notes=notes,
+        verification=verification,
+        environment=environment,
+    )
     text = render_html(report) if fmt == "html" else render_markdown(report)
     out = Path(output)
     out.write_text(text, encoding="utf-8")
     return out
+
+
+def parse_environment_items(items: list[str] | tuple[str, ...]) -> dict[str, str]:
+    parsed: dict[str, str] = {}
+    for item in items:
+        if "=" not in item:
+            raise ValueError(f"environment item must be KEY=VALUE: {item}")
+        key, value = item.split("=", 1)
+        key = key.strip()
+        if not key:
+            raise ValueError(f"environment item must have a key: {item}")
+        parsed[key] = value.strip()
+    return parsed
+
+
+def _report_environment(extra: dict[str, str] | None) -> dict[str, str]:
+    data = {
+        "python": sys.version.split()[0],
+        "platform": platform.platform(),
+    }
+    if extra:
+        data.update(redact(extra))
+    return data
 
 
 def _loads(value: Any) -> Any:

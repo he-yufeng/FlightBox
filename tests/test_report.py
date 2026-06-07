@@ -1,7 +1,12 @@
 import json
 
 from flightbox.audit import audit_run, render_audit_markdown, write_audit
-from flightbox.report import build_report, render_markdown, write_report
+from flightbox.report import (
+    build_report,
+    parse_environment_items,
+    render_markdown,
+    write_report,
+)
 from flightbox.store import RecordStore
 
 
@@ -37,6 +42,43 @@ def test_write_report_html(tmp_path):
 
     assert out.exists()
     assert "<!doctype html>" in out.read_text(encoding="utf-8")
+
+
+def test_report_includes_evidence_notes_verification_and_environment(tmp_path):
+    store = RecordStore(tmp_path / "recordings.db")
+    run_id = store.create_run(name="evidence-run")
+    store.add_event(run_id, 1, "llm_call", request={"messages": []}, response={"ok": True})
+
+    report = build_report(
+        run_id,
+        store,
+        notes=["Compared against the failing run from CI."],
+        verification=["pytest tests/test_agent.py -q"],
+        environment={"repo": "demo-agent", "api_key": "secretvalue123456789"},
+    )
+    text = render_markdown(report)
+
+    assert "Compared against the failing run from CI." in text
+    assert "`pytest tests/test_agent.py -q`" in text
+    assert "repo: `demo-agent`" in text
+    assert "secretvalue" not in text
+    assert "<REDACTED>" in text
+    assert "python:" in text
+    assert "platform:" in text
+
+
+def test_parse_environment_items_requires_key_value():
+    assert parse_environment_items(("os=windows", "node=24")) == {
+        "os": "windows",
+        "node": "24",
+    }
+
+    try:
+        parse_environment_items(("broken",))
+    except ValueError as exc:
+        assert "KEY=VALUE" in str(exc)
+    else:
+        raise AssertionError("expected ValueError")
 
 
 def test_audit_reports_locations_without_secret_values(tmp_path):

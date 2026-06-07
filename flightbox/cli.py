@@ -11,7 +11,7 @@ from rich.table import Table
 from flightbox.audit import audit_run, write_audit
 from flightbox.diff import diff_runs
 from flightbox.export import export_jsonl, export_pytest
-from flightbox.report import write_report
+from flightbox.report import parse_environment_items, write_report
 from flightbox.store import RecordStore
 from flightbox.timeline import build_timeline, render_timeline_markdown
 
@@ -189,12 +189,27 @@ def export_cmd(ctx, run_id, fmt, output):
 @click.argument("run_id")
 @click.option("-f", "--format", "fmt", type=click.Choice(["md", "html"]), default="md")
 @click.option("-o", "--output", default=None, help="Output report path.")
+@click.option("--note", "notes", multiple=True, help="Extra evidence note for the report.")
+@click.option("--verify", "verification", multiple=True, help="Verification command to list.")
+@click.option("--env", "environment", multiple=True, help="Environment metadata as KEY=VALUE.")
 @click.pass_context
-def report_cmd(ctx, run_id, fmt, output):
+def report_cmd(ctx, run_id, fmt, output, notes, verification, environment):
     """Generate a redacted Markdown or HTML evidence report."""
     store = _get_store(ctx.obj["db"])
     out = output or f"flightbox_report_{run_id}.{fmt}"
-    write_report(run_id, out, fmt=fmt, store=store)
+    try:
+        env_items = parse_environment_items(environment)
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    write_report(
+        run_id,
+        out,
+        fmt=fmt,
+        store=store,
+        notes=list(notes),
+        verification=list(verification),
+        environment=env_items,
+    )
     console.print(f"Generated redacted report at [bold]{out}[/bold]")
     store.close()
 
