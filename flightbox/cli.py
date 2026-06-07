@@ -227,8 +227,9 @@ def timeline_cmd(ctx, run_id, output):
 @click.argument("run_id")
 @click.option("-f", "--format", "fmt", type=click.Choice(["md", "json"]), default="md")
 @click.option("-o", "--output", default=None, help="Output audit path.")
+@click.option("--policy", "policy_path", default=None, help="Optional .flightboxignore policy path.")
 @click.pass_context
-def audit_cmd(ctx, run_id, fmt, output):
+def audit_cmd(ctx, run_id, fmt, output, policy_path):
     """Audit raw recording payloads for common secret patterns."""
     store = _get_store(ctx.obj["db"])
     try:
@@ -236,9 +237,9 @@ def audit_cmd(ctx, run_id, fmt, output):
             console.print(f"[red]Run '{run_id}' not found.[/red]")
             return
 
-        findings = audit_run(run_id, store)
+        findings = audit_run(run_id, store, policy_path=policy_path)
         if output:
-            write_audit(run_id, output, fmt=fmt, store=store)
+            write_audit(run_id, output, fmt=fmt, store=store, policy_path=policy_path)
             console.print(f"Wrote secret audit to [bold]{output}[/bold]")
             return
 
@@ -249,10 +250,11 @@ def audit_cmd(ctx, run_id, fmt, output):
         table = Table(title=f"Secret Audit: {run_id}")
         table.add_column("Event", justify="right")
         table.add_column("Field")
+        table.add_column("Path")
         table.add_column("Pattern")
         table.add_column("Preview")
         for item in findings:
-            table.add_row(str(item.seq), item.field, item.pattern, item.preview)
+            table.add_row(str(item.seq), item.field, item.path, item.pattern, item.preview)
         console.print(table)
     finally:
         store.close()

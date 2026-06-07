@@ -45,13 +45,25 @@ flightbox report <run-id> -f md -o evidence.md
 flightbox report <run-id> -f html -o evidence.html
 flightbox timeline <run-id> -o timeline.md
 flightbox audit <run-id>
+flightbox audit <run-id> --policy .flightboxignore
 ```
 
 报告会在写出前脱敏常见 API key、Bearer token、GitHub token 和 Authorization header，适合贴到 PR、issue、CI 复盘或者发给同事。
 
 如果只想快速看一次运行的关键调用链，可以用 `timeline`。它会按调用顺序输出一张 Markdown 表，包含 provider、model、耗时、token、错误状态，以及脱敏后的请求 / 回复摘要。这个格式比完整报告更短，适合放在 PR 评论、debug 记录或 issue 复盘里。
 
-分享证据前可以先跑 `audit`。它扫描原始 recording 里是否有常见 token / API key 模式，但只输出事件编号、字段、命中类型和脱敏预览，不回显真实 secret。
+分享证据前可以先跑 `audit`。它扫描原始 recording 里是否有常见 token / API key 模式，但只输出事件编号、顶层字段、JSON 路径、命中类型和脱敏预览，不回显真实 secret。如果某些字段里本来就会出现安全的示例 token，可以用 `.flightboxignore` 控制误报：
+
+```text
+# 忽略整个顶层字段
+field:token_usage
+
+# 忽略某个 JSON 路径，* 表示列表元素
+path:request.messages.*.content
+
+# 关闭某类 pattern
+pattern:github-token
+```
 
 ## 常用命令
 
@@ -62,6 +74,7 @@ flightbox stats <run-id>
 flightbox diff <run-a> <run-b>
 flightbox timeline <run-id> -o timeline.md
 flightbox audit <run-id>
+flightbox audit <run-id> --policy .flightboxignore
 flightbox export <run-id> -f jsonl -o eval_dataset.jsonl
 flightbox export <run-id> -f pytest -o test_replay.py
 flightbox report <run-id> -f md -o evidence.md
