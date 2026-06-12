@@ -71,6 +71,9 @@ flightbox diff <run-a> <run-b>
 # JSONL eval rows
 flightbox export <run-id> -f jsonl -o eval_dataset.jsonl
 
+# Raw payloads are opt-in; the default JSONL export redacts common secrets.
+flightbox export <run-id> -f jsonl --raw -o private_fixture.jsonl
+
 # pytest replay skeleton
 flightbox export <run-id> -f pytest -o test_replay.py
 
@@ -140,7 +143,8 @@ flightbox timeline <run-id>       # Render a compact redacted call timeline
 flightbox audit <run-id>          # Check raw payloads for common secret patterns
 flightbox audit <run-id> --policy .flightboxignore
 flightbox diff <run-a> <run-b>    # Compare two runs
-flightbox export <run-id>         # Export as JSONL or pytest
+flightbox export <run-id>         # Export as redacted JSONL or pytest
+flightbox export <run-id> --raw   # Keep raw JSONL payloads for private fixtures
 flightbox report <run-id>         # Export a redacted evidence report
 flightbox report <run-id> --note "..." --verify "pytest -q" --env os=windows
 flightbox delete <run-id>         # Delete a recording

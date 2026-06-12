@@ -170,13 +170,18 @@ def diff_cmd(ctx, run_a, run_b):
 @click.argument("run_id")
 @click.option("-f", "--format", "fmt", type=click.Choice(["jsonl", "pytest"]), default="jsonl")
 @click.option("-o", "--output", default=None, help="Output file path.")
+@click.option(
+    "--redact/--raw",
+    default=True,
+    help="Redact common secrets in JSONL exports. Use --raw only for private fixtures.",
+)
 @click.pass_context
-def export_cmd(ctx, run_id, fmt, output):
+def export_cmd(ctx, run_id, fmt, output, redact):
     """Export a run as an eval dataset (JSONL) or pytest test."""
     store = _get_store(ctx.obj["db"])
     if fmt == "jsonl":
         out = output or f"flightbox_export_{run_id}.jsonl"
-        count = export_jsonl(run_id, out, store)
+        count = export_jsonl(run_id, out, store, redact_secrets=redact)
         console.print(f"Exported {count} LLM calls to [bold]{out}[/bold]")
     else:
         out = output or f"test_replay_{run_id}.py"

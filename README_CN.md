@@ -81,6 +81,7 @@ flightbox timeline <run-id> -o timeline.md
 flightbox audit <run-id>
 flightbox audit <run-id> --policy .flightboxignore
 flightbox export <run-id> -f jsonl -o eval_dataset.jsonl
+flightbox export <run-id> -f jsonl --raw -o private_fixture.jsonl
 flightbox export <run-id> -f pytest -o test_replay.py
 flightbox report <run-id> -f md -o evidence.md
 flightbox report <run-id> --note "..." --verify "pytest -q" --env os=windows
@@ -91,7 +92,7 @@ flightbox report <run-id> --note "..." --verify "pytest -q" --env os=windows
 - Agent 生产问题复现
 - LLM 调用链审计
 - 对比两次 agent run 的分叉点
-- 把真实运行记录转成 eval dataset
+- 把真实运行记录转成默认脱敏的 eval dataset；只有私有 fixture 才用 `--raw`
 - 给 PR / CI / review 准备脱敏证据包
 
 ## 支持范围

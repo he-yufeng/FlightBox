@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from flightbox.report import redact
 from flightbox.store import RecordStore
 
 
@@ -12,6 +13,8 @@ def export_jsonl(
     run_id: str,
     output: str | Path,
     store: RecordStore | None = None,
+    *,
+    redact_secrets: bool = True,
 ) -> int:
     """Export a run's LLM calls as a JSONL file (one line per call).
 
@@ -31,6 +34,9 @@ def export_jsonl(
             resp = json.loads(ev["response"]) if isinstance(ev["response"], str) else ev["response"]
             if not req or not resp:
                 continue
+            if redact_secrets:
+                req = redact(req)
+                resp = redact(resp)
 
             entry = {
                 "messages": req.get("messages", []),
@@ -79,5 +85,5 @@ def test_replay_{safe_name}():
     )
 '''
 
-    output.write_text(code)
+    output.write_text(code, encoding="utf-8")
     return event_count
