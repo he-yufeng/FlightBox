@@ -21,6 +21,8 @@ def diff_runs(
     run_a: str,
     run_b: str,
     store: RecordStore | None = None,
+    *,
+    ignored_fields: set[str] | tuple[str, ...] | None = None,
 ) -> list[DiffEntry]:
     """Compare two recorded runs event-by-event.
 
@@ -33,7 +35,12 @@ def diff_runs(
     events_b = store.get_events(run_b)
 
     diffs: list[DiffEntry] = []
-    compare_fields = ("event_type", "provider", "model", "request", "response", "error")
+    ignored = set(ignored_fields or ())
+    compare_fields = tuple(
+        field
+        for field in ("event_type", "provider", "model", "request", "response", "error")
+        if field not in ignored
+    )
 
     max_seq = max(len(events_a), len(events_b))
     for i in range(max_seq):

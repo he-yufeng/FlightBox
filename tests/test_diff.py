@@ -32,6 +32,15 @@ def test_response_diff(store):
     assert diffs[0].field == "response"
 
 
+def test_ignored_fields_hide_expected_noise(store):
+    a = store.create_run(name="a")
+    b = store.create_run(name="b")
+    store.add_event(a, 1, "llm_call", request={"metadata": {"trace": "a"}}, response={"text": "same"})
+    store.add_event(b, 1, "llm_call", request={"metadata": {"trace": "b"}}, response={"text": "same"})
+
+    assert diff_runs(a, b, store, ignored_fields={"request"}) == []
+
+
 def test_length_diff(store):
     a = store.create_run(name="a")
     b = store.create_run(name="b")

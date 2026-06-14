@@ -77,6 +77,7 @@ flightbox list
 flightbox show <run-id>
 flightbox stats <run-id>
 flightbox diff <run-a> <run-b>
+flightbox diff <run-a> <run-b> --ignore-field request
 flightbox timeline <run-id> -o timeline.md
 flightbox audit <run-id>
 flightbox audit <run-id> --policy .flightboxignore

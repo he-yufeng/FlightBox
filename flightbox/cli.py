@@ -140,11 +140,17 @@ def stats_cmd(ctx, run_id):
 @cli.command("diff")
 @click.argument("run_a")
 @click.argument("run_b")
+@click.option(
+    "--ignore-field",
+    "ignored_fields",
+    multiple=True,
+    help="Top-level event field to ignore, e.g. request or response. Can be repeated.",
+)
 @click.pass_context
-def diff_cmd(ctx, run_a, run_b):
+def diff_cmd(ctx, run_a, run_b, ignored_fields):
     """Diff two recorded runs to find where they diverged."""
     store = _get_store(ctx.obj["db"])
-    diffs = diff_runs(run_a, run_b, store)
+    diffs = diff_runs(run_a, run_b, store, ignored_fields=tuple(ignored_fields))
     if not diffs:
         console.print("[green]Runs are identical.[/green]")
         return

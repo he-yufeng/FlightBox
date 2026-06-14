@@ -63,6 +63,7 @@ flightbox show <run-id>
 flightbox stats <run-id>
 flightbox timeline <run-id>
 flightbox diff <run-a> <run-b>
+flightbox diff <run-a> <run-b> --ignore-field request
 ```
 
 ### Export
@@ -143,6 +144,7 @@ flightbox timeline <run-id>       # Render a compact redacted call timeline
 flightbox audit <run-id>          # Check raw payloads for common secret patterns
 flightbox audit <run-id> --policy .flightboxignore
 flightbox diff <run-a> <run-b>    # Compare two runs
+flightbox diff <run-a> <run-b> --ignore-field request  # Hide expected volatile fields
 flightbox export <run-id>         # Export as redacted JSONL or pytest
 flightbox export <run-id> --raw   # Keep raw JSONL payloads for private fixtures
 flightbox report <run-id>         # Export a redacted evidence report

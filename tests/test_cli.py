@@ -54,3 +54,21 @@ def test_report_cli_rejects_bad_environment_item(tmp_path):
 
     assert result.exit_code != 0
     assert "KEY=VALUE" in result.output
+
+
+def test_diff_cli_can_ignore_noisy_fields(tmp_path):
+    db = tmp_path / "recordings.db"
+    store = RecordStore(db)
+    run_a = store.create_run(name="a")
+    run_b = store.create_run(name="b")
+    store.add_event(run_a, 1, "llm_call", request={"trace": "a"}, response={"text": "ok"})
+    store.add_event(run_b, 1, "llm_call", request={"trace": "b"}, response={"text": "ok"})
+    store.close()
+
+    result = CliRunner().invoke(
+        cli,
+        ["--db", str(db), "diff", run_a, run_b, "--ignore-field", "request"],
+    )
+
+    assert result.exit_code == 0, result.output
+    assert "Runs are identical" in result.output
