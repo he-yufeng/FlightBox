@@ -14,6 +14,12 @@ from flightbox.store import RecordStore
 _PATTERNS = {
     "openai-style-key": re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
     "github-token": re.compile(r"(?:gho|ghp|github_pat)_[A-Za-z0-9_]{20,}"),
+    "aws-access-key": re.compile(r"AKIA[0-9A-Z]{16}"),
+    "google-api-key": re.compile(r"AIza[0-9A-Za-z_-]{35}"),
+    "slack-token": re.compile(r"xox[baprs]-[0-9A-Za-z-]{10,}"),
+    "pem-private-key": re.compile(
+        r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----"
+    ),
     "bearer-token": re.compile(r"(?i)bearer\s+[A-Za-z0-9._~+/=-]{16,}"),
     "api-key-field": re.compile(r"(?i)api[_-]?key['\"]?\s*[:=]\s*['\"]?[^'\"\s,}]+"),
     "authorization-field": re.compile(
