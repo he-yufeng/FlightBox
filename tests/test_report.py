@@ -4,6 +4,7 @@ from flightbox.audit import audit_run, render_audit_markdown, write_audit
 from flightbox.report import (
     build_report,
     parse_environment_items,
+    redact,
     render_markdown,
     write_report,
 )
@@ -30,6 +31,43 @@ def test_report_redacts_secrets(tmp_path):
     assert "tokenvalue" not in text
     assert "plainsecret" not in text
     assert "<REDACTED>" in text
+
+
+def test_redact_masks_cloud_provider_key_values():
+    # assemble the secret-shaped values at runtime so the literals never sit in
+    # the source verbatim — committing them as-is would trip secret scanners.
+    aws = "AKIA" + "1234567890ABCDEF"
+    google = "AIza" + "B" * 35
+    slack = "xoxb-" + "1234567890" + "-abcdefghijklmnop"
+    out = redact(
+        {
+            "aws": f"creds {aws} here",
+            "google": google,
+            "slack": slack,
+        }
+    )
+    blob = json.dumps(out)
+    assert "1234567890ABCDEF" not in blob
+    assert "B" * 35 not in blob
+    assert "abcdefghijklmnop" not in blob
+    assert "<REDACTED>" in blob
+
+
+def test_redact_masks_pem_private_key_block():
+    # split the PEM markers so the verbatim header/footer aren't committed.
+    begin = "-----BEGIN RSA " + "PRIVATE KEY-----"
+    end = "-----END RSA " + "PRIVATE KEY-----"
+    pem = f"{begin}\nFAKEKEYMATERIALfakekeymaterial1234567890abcdef\n{end}"
+    out = redact({"note": f"leaked:\n{pem}"})
+    assert "fakekeymaterial" not in out["note"]
+    assert "<REDACTED>" in out["note"]
+
+
+def test_redact_keeps_token_counts():
+    # token *counts* are evidence, not secrets — they must survive redaction
+    out = redact({"usage": {"prompt_tokens": 123, "total_tokens": 456}})
+    assert out["usage"]["prompt_tokens"] == 123
+    assert out["usage"]["total_tokens"] == 456
 
 
 def test_write_report_html(tmp_path):

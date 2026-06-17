@@ -13,8 +13,13 @@ from typing import Any
 from flightbox.store import RecordStore
 
 _SECRET_PATTERNS = [
-    re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
-    re.compile(r"(gho|ghp|github_pat)_[A-Za-z0-9_]{20,}"),
+    re.compile(r"sk-[A-Za-z0-9_-]{12,}"),  # OpenAI / Anthropic (sk-ant-...) keys
+    re.compile(r"(gho|ghp|github_pat)_[A-Za-z0-9_]{20,}"),  # GitHub tokens
+    re.compile(r"AKIA[0-9A-Z]{16}"),  # AWS access key id
+    re.compile(r"AIza[0-9A-Za-z_-]{35}"),  # Google API key
+    re.compile(r"xox[baprs]-[0-9A-Za-z-]{10,}"),  # Slack token
+    # PEM private key block (multi-line)
+    re.compile(r"-----BEGIN [A-Z ]*PRIVATE KEY-----[\s\S]+?-----END [A-Z ]*PRIVATE KEY-----"),
     re.compile(r"(?i)(bearer\s+)[A-Za-z0-9._~+/=-]{16,}"),
     re.compile(r"(?i)(api[_-]?key['\"]?\s*[:=]\s*['\"]?)[^'\"\s,}]+"),
     re.compile(r"(?i)(authorization['\"]?\s*[:=]\s*['\"]?)[^'\"\s,}]+"),
@@ -170,7 +175,7 @@ def render_html(report: dict[str, Any]) -> str:
     markdown = render_markdown(report)
     return f"""<!doctype html>
 <meta charset="utf-8">
-<title>FlightBox Report {html.escape(report['run']['run_id'])}</title>
+<title>FlightBox Report {html.escape(report["run"]["run_id"])}</title>
 <style>
 body {{ font-family: system-ui, sans-serif; max-width: 980px; margin: 40px auto; line-height: 1.5; }}
 pre {{ background: #f6f8fa; padding: 12px; border-radius: 6px; overflow: auto; }}
