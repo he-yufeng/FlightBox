@@ -14,6 +14,12 @@ from flightbox.store import RecordStore
 _PATTERNS = {
     "openai-style-key": re.compile(r"sk-[A-Za-z0-9_-]{12,}"),
     "github-token": re.compile(r"(?:gho|ghp|github_pat)_[A-Za-z0-9_]{20,}"),
+    # A JWT is header.payload.signature, where the header and payload are both
+    # base64url-encoded JSON objects, so both segments start with "eyJ". That
+    # double anchor keeps false positives low. A bare JWT in a JSON field slips
+    # past the bearer/authorization patterns (which need the "Bearer " prefix),
+    # so it gets its own pattern.
+    "jwt": re.compile(r"eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
     "aws-access-key": re.compile(r"AKIA[0-9A-Z]{16}"),
     "google-api-key": re.compile(r"AIza[0-9A-Za-z_-]{35}"),
     "slack-token": re.compile(r"xox[baprs]-[0-9A-Za-z-]{10,}"),

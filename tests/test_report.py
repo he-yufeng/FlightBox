@@ -63,6 +63,14 @@ def test_redact_masks_pem_private_key_block():
     assert "<REDACTED>" in out["note"]
 
 
+def test_redact_masks_jwt():
+    # assemble the JWT-shaped value at runtime so no literal token is committed
+    jwt = "eyJ" + "hdr0123456789" + ".eyJ" + "payload012345" + "." + "sigABCdef67890"
+    out = redact({"session": f"token {jwt} end"})
+    assert jwt not in out["session"]
+    assert "<REDACTED>" in out["session"]
+
+
 def test_redact_keeps_token_counts():
     # token *counts* are evidence, not secrets — they must survive redaction
     out = redact({"usage": {"prompt_tokens": 123, "total_tokens": 456}})

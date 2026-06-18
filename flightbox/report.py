@@ -15,6 +15,9 @@ from flightbox.store import RecordStore
 _SECRET_PATTERNS = [
     re.compile(r"sk-[A-Za-z0-9_-]{12,}"),  # OpenAI / Anthropic (sk-ant-...) keys
     re.compile(r"(gho|ghp|github_pat)_[A-Za-z0-9_]{20,}"),  # GitHub tokens
+    # JWT (header.payload.signature; both header and payload are base64url JSON,
+    # so both start with "eyJ" — a low-false-positive anchor). Redacted whole.
+    re.compile(r"eyJ[A-Za-z0-9_-]+\.eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+"),
     re.compile(r"AKIA[0-9A-Z]{16}"),  # AWS access key id
     re.compile(r"AIza[0-9A-Za-z_-]{35}"),  # Google API key
     re.compile(r"xox[baprs]-[0-9A-Za-z-]{10,}"),  # Slack token

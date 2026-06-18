@@ -13,6 +13,8 @@ _PEM = (
     "\nFAKEKEYMATERIAL1234567890abcdef\n"
     "-----END RSA " + "PRIVATE KEY-----"
 )
+# header.payload.signature, both header and payload base64url JSON ("eyJ" prefix)
+_JWT = "eyJ" + "hdr0123456789" + ".eyJ" + "payload012345" + "." + "sigABCdef67890"
 
 
 def _run_with_secrets(tmp_path):
@@ -46,3 +48,12 @@ def test_audit_policy_can_disable_a_cloud_key_pattern(tmp_path):
     assert "aws-access-key" not in patterns
     # the others are still flagged
     assert "google-api-key" in patterns
+
+
+def test_audit_flags_bare_jwt_in_field(tmp_path):
+    # a JWT sitting in a JSON field (no "Bearer " prefix) must still be caught
+    store = RecordStore(tmp_path / "recordings.db")
+    run_id = store.create_run(name="jwt")
+    store.add_event(run_id, 1, "llm_call", request={"session": _JWT}, response={})
+    patterns = {f.pattern for f in audit_run(run_id, store)}
+    assert "jwt" in patterns
