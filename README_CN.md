@@ -117,6 +117,17 @@ flightbox report <run-id> --note "..." --verify "pytest -q" --env os=windows
 
 FlightBox 不依赖云端服务，不需要把你的调试数据上传到第三方平台。录制默认保存在本地 `.flightbox/recordings.db`。
 
+## 后续规划
+
+录制、回放、对比、报告这条主线已经稳定，接下来想覆盖 Agent 实际会调用的更多东西，并把 recording 变成真正能拦回归的关卡：
+
+- **更广的 SDK 支持**：Google GenAI、Cohere、以及裸 HTTP 的 LLM 客户端，让一次录制不再取决于 Agent 恰好用了哪个 SDK。
+- **CI 里的基线断言**：`flightbox assert <run> --against baseline.jsonl`，当 Agent 的调用序列偏离录好的基线时让构建失败，把行为变化挡在评审阶段而不是上线之后。
+- **成本与耗时趋势**：把已经记录的每次调用 token / 耗时汇总成一张跨运行的小表，让花费回归和输出回归一样一眼可见。
+- **本地 transcript 查看器**：把一次运行的调用链渲染成单文件 HTML，当 Markdown timeline 还不足以看清两次运行从哪里分叉时用。
+
+整条路线都坚持本地优先，任何 recording 都不必离开你的机器。
+
 ## License
 
 MIT

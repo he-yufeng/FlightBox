@@ -173,6 +173,17 @@ flightbox delete <run-id>         # Delete a recording
 
 Recordings are stored in `.flightbox/recordings.db` by default. You can pass a custom database path with `--db` in the CLI or by constructing `RecordStore` yourself.
 
+## Roadmap
+
+Record / replay / diff / report are solid. The next steps are about covering more of what agents actually call and turning recordings into a real regression gate:
+
+- **Wider SDK coverage** — Google GenAI, Cohere, and raw HTTP LLM clients, so a recording doesn't depend on which SDK an agent happens to use.
+- **A baseline assertion for CI** — `flightbox assert <run> --against baseline.jsonl` that fails the build when an agent's call sequence drifts from a recorded baseline, so behavior change is caught in review, not in production.
+- **Cost and latency trends** — roll the per-call token/latency data already captured into a small cross-run summary, so a regression in spend is as visible as one in output.
+- **A local transcript viewer** — a single-file HTML view of a run's call chain, for when a Markdown timeline isn't enough to see where two runs diverged.
+
+It stays local-first throughout — no recording ever has to leave your machine.
+
 ## Related projects
 
 - [AgentProbe](https://github.com/he-yufeng/AgentProbe) — a pytest plugin for regression-testing AI agents
