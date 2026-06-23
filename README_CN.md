@@ -1,4 +1,16 @@
-# FlightBox
+<div align="center">
+
+<img src="docs/banner.png" alt="FlightBox — 记录、回放、对比 Agent 每一次 LLM 调用" width="100%">
+
+[![PyPI](https://img.shields.io/pypi/v/flightbox.svg)](https://pypi.org/project/flightbox/)
+[![Python](https://img.shields.io/pypi/pyversions/flightbox.svg)](https://pypi.org/project/flightbox/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+[**快速开始**](#快速开始) · [**录制**](#录制) · [**回放**](#回放) · [**对比**](#diff) · [English](README.md)
+
+</div>
+
+<p align="center"><img src="docs/demo.png" alt="flightbox record and replay" width="620"></p>
 
 **AI Agent 调试黑匣子**：记录 Agent 的每一次 LLM 调用，之后可以确定性回放、对比两次运行，并导出脱敏后的证据报告。
 

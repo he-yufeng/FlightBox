@@ -1,6 +1,16 @@
-<p align="right"><a href="README_CN.md">中文文档</a></p>
+<div align="center">
 
-# FlightBox
+<img src="docs/banner.png" alt="FlightBox — record, replay, and diff every LLM call your agent makes" width="100%">
+
+[![PyPI](https://img.shields.io/pypi/v/flightbox.svg)](https://pypi.org/project/flightbox/)
+[![Python](https://img.shields.io/pypi/pyversions/flightbox.svg)](https://pypi.org/project/flightbox/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
+[**Quick Start**](#quick-start) · [**Record**](#record) · [**Replay**](#replay) · [**Diff**](#diff) · [中文](README_CN.md)
+
+</div>
+
+<p align="center"><img src="docs/demo.png" alt="flightbox record and replay" width="620"></p>
 
 **Black-box flight recorder for AI agents** — record every LLM call your agent makes, replay sessions deterministically, and export a redacted evidence report when something breaks.
 
