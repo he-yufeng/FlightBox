@@ -184,11 +184,14 @@ Record / replay / diff / report are solid. The next steps are about covering mor
 
 It stays local-first throughout — no recording ever has to leave your machine.
 
-## Related projects
+## Related Projects
 
-- [AgentProbe](https://github.com/he-yufeng/AgentProbe) — a pytest plugin for regression-testing AI agents
-- [agentcikit](https://github.com/he-yufeng/agentcikit) — CLI tools for AI-agent, MCP, and CI evidence and safety
-- [CoreCoder](https://github.com/he-yufeng/CoreCoder) — a minimal AI coding agent you can read end to end
+FlightBox is one of my LLM-reliability tools. A few others in the same vein:
+
+- **[CoreCoder](https://github.com/he-yufeng/CoreCoder)** — want to understand how a coding agent really works? Read the whole ~1k-line engine end to end, not a black box.
+- **[RepoWiki](https://github.com/he-yufeng/RepoWiki)** — dropped into an unfamiliar codebase? It gives you a guided wiki and a where-to-start reading path, a self-hostable DeepWiki alternative.
+- **[TokenTracker](https://github.com/he-yufeng/TokenTracker)** — no more surprise LLM bills: track every token and dollar with one line of code.
+- **[PromptDiff](https://github.com/he-yufeng/PromptDiff)** — did that prompt change help or hurt? Semantic diffing with an LLM judge, gated in CI.
 
 ## License
 
