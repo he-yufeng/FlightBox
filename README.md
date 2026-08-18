@@ -104,6 +104,7 @@ flightbox timeline <run-id> -o timeline.md
 flightbox audit <run-id>
 flightbox audit <run-id> -f json -o audit.json
 flightbox audit <run-id> --policy .flightboxignore
+flightbox audit <run-id> --strict   # CI gate: exit 1 when any finding survives the policy
 ```
 
 The report redacts common API keys, bearer tokens, GitHub tokens, and authorization headers before writing the file. It also records lightweight evidence metadata: notes, verification commands, Python version, platform, and optional `KEY=VALUE` environment facts.
